@@ -1,0 +1,12 @@
+#!/usr/bin/env sh
+set -e
+
+apt-get update
+DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+    pkg-config \
+    libglib2.0-dev libgobject-2.0-dev libgio2.0-dev \
+    libgtk-3-dev  libgdk-pixbuf2.0-dev libpango1.0-dev libatk1.0-dev \
+    gstreamer1.0-dev libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev \
+    libx11-dev libx11-xcb-dev libxcb1-dev xorg-dev \
+    libssl-dev ca-certificates
+rm -rf /var/lib/apt/lists/*

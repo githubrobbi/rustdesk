@@ -1,0 +1,5 @@
+# Cross.toml  – keep any other targets you already have
+[target.aarch64-unknown-linux-gnu]
+image     = "ghcr.io/cross-rs/aarch64-unknown-linux-gnu:latest"
+# run our script during the custom‑image build step
+pre-build = ["sh", "cross-prebuild.sh"]
