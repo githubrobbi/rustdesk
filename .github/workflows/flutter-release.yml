@@ -1,0 +1,77 @@
+name: Flutter Release
+
+# Run on tag pushes like v1.2.3, or manually
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+jobs:
+  build-flutter:
+    # Reuse your existing composite that knows how to build Flutter
+    uses: ./.github/workflows/flutter-build.yml
+    with:
+      upload-artifact: true    # force it to upload each platform’s artifacts
+
+  publish-flutter:
+    needs: build-flutter
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        persist-credentials: true   # needed for the commit step
+
+    - name: Download all Flutter artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: '*'                   # grabs every artifact your build job produced
+
+    - name: Create GitHub Release
+      id: create_release
+      uses: actions/create-release@v1
+      with:
+        tag_name: ${{ github.ref_name }}
+        release_name: Release ${{ github.ref_name }}
+        draft: false
+        prerelease: false
+
+    - name: Upload Flutter binaries to Release
+      uses: actions/upload-release-asset@v1
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: |
+          # adjust these globs if your composite puts them elsewhere:
+          build/linux/release/rustdesk*
+          build/linux-arm64/release/rustdesk*
+          build/windows/release/*.exe
+          build/macos/release/rustdesk*
+          build/macos-arm64/release/rustdesk*
+        asset_name: |
+          rustdesk-flutter-linux
+          rustdesk-flutter-linux-arm64
+          rustdesk-flutter-windows.exe
+          rustdesk-flutter-macos
+          rustdesk-flutter-macos-arm64
+        asset_content_type: application/octet-stream
+
+    - name: Generate DOWNLOADS.md
+      run: |
+        cat > DOWNLOADS.md <<EOF
+        # RustDesk ${{ github.ref_name }} Flutter Downloads
+
+        | Platform           | Link |
+        |--------------------|------|
+        | Linux x86_64       | [Download](https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/rustdesk-flutter-linux) |
+        | Linux ARM64        | [Download](https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/rustdesk-flutter-linux-arm64) |
+        | Windows x86_64     | [Download](https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/rustdesk-flutter-windows.exe) |
+        | macOS x86_64       | [Download](https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/rustdesk-flutter-macos) |
+        | macOS ARM64 (M1)   | [Download](https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/rustdesk-flutter-macos-arm64) |
+        EOF
+
+    - name: Commit DOWNLOADS.md
+      uses: stefanzweifel/git-auto-commit-action@v4
+      with:
+        commit_message: "📦 Update Flutter download table for ${{ github.ref_name }}"
+        file_pattern: DOWNLOADS.md
